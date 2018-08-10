@@ -66,12 +66,15 @@ def renameChannels():
                 validate=True
             )
 
-if args.token == None:
-    print('Please pass the Slack API token to this app with the '-t' flag')
-else:
-    if args.command == 'list':
-        print('Downloading Slack channel list into', outputFile)
-        listChannels()
-    elif args.command == 'rename':
-        print('Renaming Slack channels according to', outputFile)
-        renameChannels()
+def main():
+    if args.token == None:
+        print('Please pass the Slack API token to this app with the '-t' flag')
+    else:
+        if args.command == 'list':
+            print('Downloading Slack channel list into', outputFile)
+            listChannels()
+        elif args.command == 'rename':
+            print('Renaming Slack channels according to', outputFile)
+            renameChannels()
+
+main()
