@@ -27,16 +27,13 @@ def listChannels():
     csvWriter.writerow(['Channel ID', 'Channel Name', 'New Channel Name', 'Creator', 'Email','Members', 'Purpose', 'Topic'])
 
     for i in range(0, length_data):
-
-        sd = slackChannelData[i]
-
         # Here's where we get the fields we want to push into the CSV
-        id = sd['id']
-        name = sd['name']
-        members = sd['num_members']
-        purpose = sd['purpose']['value']
-        topic = sd['topic']['value']
-        creator = sd['creator']
+        id = slackChannelData[i]['id']
+        name = slackChannelData[i]['name']
+        members = slackChannelData[i]['num_members']
+        purpose = slackChannelData[i]['purpose']['value']
+        topic = slackChannelData[i]['topic']['value']
+        creator = slackChannelData[i]['creator']
 
         # Making a second call to the API to determine the name and email of the channel creator
         userInfoRaw = sc.api_call('users.info', user=creator)
