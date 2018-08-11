@@ -15,11 +15,12 @@ def get_args():
     parser.add_argument('-t', '--token', help='Stores the Slack API token needed to run this script')
     parser.add_argument('-f', '--file', help='Specify the name of the file to be used')
 
-    get_args.args = parser.parse_args()
+    return parser.parse_args()
 
 
 def list_channels():
-    sc = SlackClient(get_args.args.token)
+    args = get_args()
+    sc = SlackClient(args.token)
 
     channel_list_raw = sc.api_call('channels.list', exclude_archived=True)
     slack_channel_data = channel_list_raw['channels']
@@ -36,10 +37,12 @@ def list_channels():
         topic = slack_channel_data[i]['topic']['value']
         creator_id = slack_channel_data[i]['creator']
 
-        get_user(creator_id)
+        user_data = get_user(creator_id)
+        creator_name = user_data['real_name']
+        creator_email = user_data['email']
 
         print(f'Writing channel with ID {channel_id} and named {channel_name} to {main.csv_file}')
-        create_csv.csv_writer.writerow([channel_id, channel_name, '', get_user.creatorName, get_user.creatorEmail, members, purpose, topic])
+        create_csv.csv_writer.writerow([channel_id, channel_name, '', creator_name, creator_email, members, purpose, topic])
 
     create_csv.data_to_file.close()
 
@@ -52,13 +55,14 @@ def create_csv():
 
 
 def get_user(creator_id):
-    sc = SlackClient(get_args.args.token)
+    args = get_args()
+    sc = SlackClient(args.token)
 
     # Making a second call to the API to determine the name and email of the channel creator
     user_info_raw = sc.api_call('users.info', user=creator_id)
-    user_data = user_info_raw['user']
-    get_user.creatorName = user_data['profile']['real_name']
-    get_user.creatorEmail = user_data['profile']['email']
+    user_data = user_info_raw['user']['profile']
+
+    return user_data
 
 
 def rename_channels():
@@ -77,8 +81,7 @@ def rename_channels():
 
 
 def main():
-    get_args()
-    args = get_args.args
+    args = get_args()
 
     # Let's specify our file to use file
     if args.file == None:
