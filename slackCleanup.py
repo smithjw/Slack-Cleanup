@@ -82,6 +82,8 @@ def list_channels():
 
 
 def rename_channels():
+    args = get_args()
+    sc = SlackClient(args.token)
     # For information on the channels.rename method, see this Slack API doc https://api.slack.com/methods/channels.rename
     with open(get_csv(), newline='') as csvfile:
 
