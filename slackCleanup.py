@@ -17,6 +17,7 @@ def get_args():
 
     return parser.parse_args()
 
+
 def get_csv():
     args = get_args()
 
@@ -27,6 +28,32 @@ def get_csv():
 
     return csv_file
 
+
+def create_csv():
+    # Write the title row of the CSV
+    data_to_file = open(get_csv(), 'w', newline='')
+    csv_writer = csv.writer(data_to_file, delimiter=',')
+    return csv_writer
+
+
+def append_csv():
+    # Write the title row of the CSV
+    data_to_file = open(get_csv(), 'a', newline='')
+    csv_writer = csv.writer(data_to_file, delimiter=',')
+    return csv_writer
+
+
+def get_user(creator_id):
+    args = get_args()
+    sc = SlackClient(args.token)
+
+    # Making a second call to the API to determine the name and email of the channel creator
+    user_info_raw = sc.api_call('users.info', user=creator_id)
+    user_data = user_info_raw['user']['profile']
+
+    return user_data
+
+
 def list_channels():
     args = get_args()
     sc = SlackClient(args.token)
@@ -35,7 +62,7 @@ def list_channels():
     slack_channel_data = channel_list_raw['channels']
     length_data = len(slack_channel_data)
 
-    create_csv()
+    create_csv().writerow(['Channel ID', 'Channel Name', 'New Channel Name', 'Creator', 'Email','Members', 'Purpose', 'Topic'])
 
     for i in range(0, length_data):
         # Here's where we get the fields we want to push into the CSV
@@ -51,38 +78,7 @@ def list_channels():
         creator_email = user_data['email']
 
         print(f'Writing channel with ID {channel_id} and named {channel_name} to {get_csv()}')
-        write_csv(channel_id, channel_name, '', creator_name, creator_email, members, purpose, topic)
-
-    open_csv().close()
-
-
-def open_csv():
-    # Write the title row of the CSV
-    data_to_file = open(get_csv(), 'w', newline='')
-    return data_to_file
-
-
-def csv_writer():
-    csv_writer = csv.writer(open_csv(), delimiter=',')
-    return csv_writer
-
-
-def ???_csv():
-
-    return csv_writer
-    #remove following line - have it in each function that's needded
-    csv_writer.writerow([cid, cn, ncn, c, e, m, p, t])
-
-
-def get_user(creator_id):
-    args = get_args()
-    sc = SlackClient(args.token)
-
-    # Making a second call to the API to determine the name and email of the channel creator
-    user_info_raw = sc.api_call('users.info', user=creator_id)
-    user_data = user_info_raw['user']['profile']
-
-    return user_data
+        append_csv().writerow([channel_id, channel_name, '', creator_name, creator_email, members, purpose, topic])
 
 
 def rename_channels():
