@@ -17,6 +17,15 @@ def get_args():
 
     return parser.parse_args()
 
+def get_csv():
+    args = get_args()
+
+    if args.file == None:
+        csv_file = 'Channel List.csv'
+    else:
+        csv_file = args.file
+
+    return csv_file
 
 def list_channels():
     args = get_args()
@@ -41,17 +50,19 @@ def list_channels():
         creator_name = user_data['real_name']
         creator_email = user_data['email']
 
-        print(f'Writing channel with ID {channel_id} and named {channel_name} to {main.csv_file}')
+        print(f'Writing channel with ID {channel_id} and named {channel_name} to {get_csv()}')
         create_csv.csv_writer.writerow([channel_id, channel_name, '', creator_name, creator_email, members, purpose, topic])
 
-    create_csv.data_to_file.close()
+    create_csv().close()
 
 
 def create_csv():
     # Write the title row of the CSV
-    create_csv.data_to_file = open(main.csv_file, 'w', newline='')
-    create_csv.csv_writer = csv.writer(create_csv.data_to_file, delimiter=',')
+    data_to_file = open(get_csv(), 'w', newline='')
+    create_csv.csv_writer = csv.writer(data_to_file, delimiter=',')
     create_csv.csv_writer.writerow(['Channel ID', 'Channel Name', 'New Channel Name', 'Creator', 'Email','Members', 'Purpose', 'Topic'])
+
+    return data_to_file
 
 
 def get_user(creator_id):
@@ -67,7 +78,7 @@ def get_user(creator_id):
 
 def rename_channels():
     # For information on the channels.rename method, see this Slack API doc https://api.slack.com/methods/channels.rename
-    with open(main.csv_file, newline='') as csvfile:
+    with open(get_csv(), newline='') as csvfile:
 
         reader = csv.DictReader(csvfile)
         for row in reader:
@@ -83,20 +94,14 @@ def rename_channels():
 def main():
     args = get_args()
 
-    # Let's specify our file to use file
-    if args.file == None:
-        main.csv_file = 'Channel List.csv'
-    else:
-        main.csv_file = args.file
-
     if args.token == None:
         print("Please pass the Slack API token to this app with the '-t' flag")
     else:
         if args.list == 'list':
-            print('Downloading Slack channel list into', main.csv_file)
+            print('Downloading Slack channel list into', get_csv())
             list_channels()
         elif args.rename == 'rename':
-            print('Renaming Slack channels according to', main.csv_file)
+            print('Renaming Slack channels according to', get_csv())
             rename_channels()
 
 
