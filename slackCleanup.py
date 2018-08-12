@@ -51,18 +51,27 @@ def list_channels():
         creator_email = user_data['email']
 
         print(f'Writing channel with ID {channel_id} and named {channel_name} to {get_csv()}')
-        create_csv.csv_writer.writerow([channel_id, channel_name, '', creator_name, creator_email, members, purpose, topic])
+        write_csv(channel_id, channel_name, '', creator_name, creator_email, members, purpose, topic)
 
-    create_csv().close()
+    open_csv().close()
 
 
-def create_csv():
+def open_csv():
     # Write the title row of the CSV
     data_to_file = open(get_csv(), 'w', newline='')
-    create_csv.csv_writer = csv.writer(data_to_file, delimiter=',')
-    create_csv.csv_writer.writerow(['Channel ID', 'Channel Name', 'New Channel Name', 'Creator', 'Email','Members', 'Purpose', 'Topic'])
-
     return data_to_file
+
+
+def csv_writer():
+    csv_writer = csv.writer(open_csv(), delimiter=',')
+    return csv_writer
+
+
+def ???_csv():
+
+    return csv_writer
+    #remove following line - have it in each function that's needded
+    csv_writer.writerow([cid, cn, ncn, c, e, m, p, t])
 
 
 def get_user(creator_id):
