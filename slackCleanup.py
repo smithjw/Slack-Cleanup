@@ -37,17 +37,16 @@ def create_csv():
 
 
 def append_csv():
-    # Write the title row of the CSV
+    # Append data to the rows of the CSV
     data_to_file = open(get_csv(), 'a', newline='')
-    csv_writer = csv.writer(data_to_file, delimiter=',')
-    return csv_writer
+    csv_append = csv.writer(data_to_file, delimiter=',')
+    return csv_append
 
 
 def get_user(creator_id):
-    args = get_args()
-    sc = SlackClient(args.token)
-
     # Making a second call to the API to determine the name and email of the channel creator
+    sc = SlackClient(get_args().token)
+
     user_info_raw = sc.api_call('users.info', user=creator_id)
     user_data = user_info_raw['user']['profile']
 
@@ -55,8 +54,7 @@ def get_user(creator_id):
 
 
 def list_channels():
-    args = get_args()
-    sc = SlackClient(args.token)
+    sc = SlackClient(get_args().token)
 
     channel_list_raw = sc.api_call('channels.list', exclude_archived=True)
     slack_channel_data = channel_list_raw['channels']
@@ -82,8 +80,8 @@ def list_channels():
 
 
 def rename_channels():
-    args = get_args()
-    sc = SlackClient(args.token)
+    sc = SlackClient(get_args().token)
+
     # For information on the channels.rename method, see this Slack API doc https://api.slack.com/methods/channels.rename
     with open(get_csv(), newline='') as csvfile:
 
