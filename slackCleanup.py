@@ -1,61 +1,93 @@
 #!/usr/bin/env python3
 
-from slackclient import SlackClient
-
 import csv
 import json
 import argparse
 
-outputFile = 'channelList.csv'
+from slackclient import SlackClient
 
-parser = argparse.ArgumentParser(description='Command line options for this script')
-parser.add_argument('-l', '--list', dest='command', action='store_const', const='list', help='Create a CSV list of all Slack channels')
-parser.add_argument('-r', '--rename', dest='command', action='store_const', const='rename', help='Rename Slack channels based on a CSV')
-parser.add_argument('-t', '--token', help='Stores the Slack API token needed to run this script')
-args = parser.parse_args()
 
-sc = SlackClient(args.token)
+def get_args():
+    parser = argparse.ArgumentParser(description='Command line options for this script')
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-l', '--list', action='store_const', const='list', help='Create a CSV list of all Slack channels')
+    group.add_argument('-r', '--rename', action='store_const', const='rename', help='Rename Slack channels based on a CSV')
+    parser.add_argument('-t', '--token', help='Stores the Slack API token needed to run this script')
+    parser.add_argument('-f', '--file', help='Specify the name of the file to be used')
 
-def listChannels():
-    channelListRaw = sc.api_call('channels.list', exclude_archived=True)
-    slackChannelData = channelListRaw['channels']
-    length_data = len(slackChannelData)
+    return parser.parse_args()
 
+
+def get_csv():
+    args = get_args()
+
+    if args.file == None:
+        csv_file = 'Channel List.csv'
+    else:
+        csv_file = args.file
+
+    return csv_file
+
+
+def create_csv():
     # Write the title row of the CSV
-    dataToFile = open(outputFile, 'w', newline='')
-    csvWriter = csv.writer(dataToFile, delimiter=',')
-    csvWriter.writerow(['Channel ID', 'Channel Name', 'New Channel Name', 'Creator', 'Email','Members', 'Purpose', 'Topic'])
+    data_to_file = open(get_csv(), 'w', newline='')
+    csv_writer = csv.writer(data_to_file, delimiter=',')
+    return csv_writer
+
+
+def append_csv():
+    # Append data to the rows of the CSV
+    data_to_file = open(get_csv(), 'a', newline='')
+    csv_append = csv.writer(data_to_file, delimiter=',')
+    return csv_append
+
+
+def get_user(creator_id):
+    # Making a second call to the API to determine the name and email of the channel creator
+    sc = SlackClient(get_args().token)
+
+    user_info_raw = sc.api_call('users.info', user=creator_id)
+    user_data = user_info_raw['user']['profile']
+
+    return user_data
+
+
+def list_channels():
+    sc = SlackClient(get_args().token)
+
+    channel_list_raw = sc.api_call('channels.list', exclude_archived=True)
+    slack_channel_data = channel_list_raw['channels']
+    length_data = len(slack_channel_data)
+
+    create_csv().writerow(['Channel ID', 'Channel Name', 'New Channel Name', 'Creator', 'Email','Members', 'Purpose', 'Topic'])
 
     for i in range(0, length_data):
         # Here's where we get the fields we want to push into the CSV
-        id = slackChannelData[i]['id']
-        name = slackChannelData[i]['name']
-        members = slackChannelData[i]['num_members']
-        purpose = slackChannelData[i]['purpose']['value']
-        topic = slackChannelData[i]['topic']['value']
-        creator = slackChannelData[i]['creator']
+        channel_id = slack_channel_data[i]['id']
+        channel_name = slack_channel_data[i]['name']
+        members = slack_channel_data[i]['num_members']
+        purpose = slack_channel_data[i]['purpose']['value']
+        topic = slack_channel_data[i]['topic']['value']
+        creator_id = slack_channel_data[i]['creator']
 
-        # Making a second call to the API to determine the name and email of the channel creator
-        userInfoRaw = sc.api_call('users.info', user=creator)
-        userData = userInfoRaw['user']
-        creator = userData['profile']['real_name']
-        email = userData['profile']['email']
+        user_data = get_user(creator_id)
+        creator_name = user_data['real_name']
+        creator_email = user_data['email']
 
-        print(f'Writing channel with ID {id} and named {name} to CSV')
-        csvWriter.writerow([id, name, '', creator, email, members, purpose, topic])
+        print(f'Writing channel with ID {channel_id} and named {channel_name} to {get_csv()}')
+        append_csv().writerow([channel_id, channel_name, '', creator_name, creator_email, members, purpose, topic])
 
-        # Uncomment the following lines for testing purposes
-        # new_name = name + '_test'
-        # csvWriter.writerow([id, name, new_name, members, purpose, topic])
-    dataToFile.close()
 
-def renameChannels():
+def rename_channels():
+    sc = SlackClient(get_args().token)
+
     # For information on the channels.rename method, see this Slack API doc https://api.slack.com/methods/channels.rename
-    with open(outputFile, newline='') as csvfile:
+    with open(get_csv(), newline='') as csvfile:
 
         reader = csv.DictReader(csvfile)
         for row in reader:
-            print(f'Renaming channel with ID {row['Channel ID']} from {row['Channel Name']} to {row['New Channel Name']}')
+            print(f"Renaming channel with ID {row['Channel ID']} from {row['Channel Name']} to {row['New Channel Name']}")
             sc.api_call(
                 'channels.rename',
                 channel=row['Channel ID'],
@@ -63,15 +95,19 @@ def renameChannels():
                 validate=True
             )
 
+
 def main():
+    args = get_args()
+
     if args.token == None:
-        print('Please pass the Slack API token to this app with the '-t' flag')
+        print("Please pass the Slack API token to this app with the '-t' flag")
     else:
-        if args.command == 'list':
-            print('Downloading Slack channel list into', outputFile)
-            listChannels()
-        elif args.command == 'rename':
-            print('Renaming Slack channels according to', outputFile)
-            renameChannels()
+        if args.list == 'list':
+            print('Downloading Slack channel list into', get_csv())
+            list_channels()
+        elif args.rename == 'rename':
+            print('Renaming Slack channels according to', get_csv())
+            rename_channels()
+
 
 main()
