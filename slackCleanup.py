@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import csv
-import json
 import argparse
 
 from slackclient import SlackClient
