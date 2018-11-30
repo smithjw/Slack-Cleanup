@@ -3,6 +3,7 @@
 import csv
 import argparse
 
+from time import sleep
 from slackclient import SlackClient
 
 
@@ -11,6 +12,7 @@ def get_args():
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-l', '--list', action='store_const', const='list', help='Create a CSV list of all Slack channels')
     group.add_argument('-r', '--rename', action='store_const', const='rename', help='Rename Slack channels based on a CSV')
+    group.add_argument('-a', '--archive', action='store_const', const='archive', help='Archive Slack channels based on a CSV')
     parser.add_argument('-t', '--token', help='Stores the Slack API token needed to run this script')
     parser.add_argument('-f', '--file', help='Specify the name of the file to be used')
 
@@ -59,7 +61,7 @@ def list_channels():
     slack_channel_data = channel_list_raw['channels']
     length_data = len(slack_channel_data)
 
-    create_csv().writerow(['Channel ID', 'Channel Name', 'New Channel Name', 'Creator', 'Email','Members', 'Purpose', 'Topic'])
+    create_csv().writerow(['Channel ID', 'Channel Name', 'New Channel Name', 'To Archive', 'Creator', 'Email','Members', 'Purpose', 'Topic'])
 
     for i in range(0, length_data):
         # Here's where we get the fields we want to push into the CSV
@@ -75,7 +77,7 @@ def list_channels():
         creator_email = user_data['email']
 
         print(f'Writing channel with ID {channel_id} and named {channel_name} to {get_csv()}')
-        append_csv().writerow([channel_id, channel_name, '', creator_name, creator_email, members, purpose, topic])
+        append_csv().writerow([channel_id, channel_name, '', '', creator_name, creator_email, members, purpose, topic])
 
 
 def rename_channels():
@@ -95,6 +97,27 @@ def rename_channels():
             )
 
 
+def archive_channels():
+    sc = SlackClient(get_args().token)
+
+    # For information on the channels.archive method, see this Slack API doc https://api.slack.com/methods/channels.archive
+    with open(get_csv(), newline='') as csvfile:
+        # https://docs.python.org/3/library/csv.html#csv.DictReader
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            archive = row['To Archive']
+            if archive:
+                print(f"Archiving channel with ID: {row['Channel ID']} and Name: {row['Channel Name']}")
+                r = sc.api_call(
+                    "channels.archive",
+                    channel=row['ID'],
+                    validate=True
+                )
+                print(f"Channel: {row['Channel Name']}, Archived: {r['ok']}")
+                sleep( 3 )
+            else:
+                print(f"Skipping {row['Channel ID']}: {row['Channel Name']}")
+
 def main():
     args = get_args()
 
@@ -107,6 +130,9 @@ def main():
         elif args.rename == 'rename':
             print('Renaming Slack channels according to', get_csv())
             rename_channels()
+        elif args.archive == 'archive':
+            print('Renaming Slack channels according to', get_csv())
+            archive_channels()
 
-
-main()
+if __name__ == '__main__':
+    main()
